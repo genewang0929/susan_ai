@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XACTDOC
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="http://www.xactware.com/schema/XACTDOC.xsd"
+>
+  <ASSIGNMENT>
+    <CLAIM_NUMBER>WD-2025-1234</CLAIM_NUMBER>
+    <POLICY_NUMBER>POL-56789</POLICY_NUMBER>
+    <LOSS_DATE>2025-03-15</LOSS_DATE>
+    <INSURED>
+      <NAME>John Smith</NAME>
+      <ADDRESS>
+        <STREET>123 Main Street</STREET>
+        <CITY>Springfield</CITY>
+        <STATE>IL</STATE>
+        <ZIP>62701</ZIP>
+      </ADDRESS>
+    </INSURED>
+  </ASSIGNMENT>
+  <ESTIMATE>
+    <LINE_ITEMS>
+      <ITEM>
+        <CODE>WTR-DRY-CLG</CODE>
+        <DESCRIPTION>Ceiling drywall water damage repair</DESCRIPTION>
+        <QUANTITY>12.4</QUANTITY>
+        <UOM>SQFT</UOM>
+        <UNIT_PRICE>14.52</UNIT_PRICE>
+        <EXTENSION>180.05</EXTENSION>
+        <CATEGORY_CODE>WTR-DMG</CATEGORY_CODE>
+      </ITEM>
+      <!-- Additional line items -->
+    </LINE_ITEMS>
+    <ROOMS>
+      <ROOM>
+        <NAME>Bathroom</NAME>
+        <DIMENSIONS>
+          <LENGTH>10.5</LENGTH>
+          <WIDTH>8.2</WIDTH>
+          <HEIGHT>9.0</HEIGHT>
+        </DIMENSIONS>
+      </ROOM>
+    </ROOMS>
+  </ESTIMATE>
+</XACTDOC>
