@@ -2,12 +2,13 @@ from pydantic import BaseModel, model_validator
 
 class Item(BaseModel):
     code: str
-    description: str | None = None
-    quantity: float | None = None
-    uom: str | None = None
-    unit_price: float | None = None
-    extension: float | None = None
+    description: str
+    quantity: float
+    uom: str
+    unit_price: float
+    extension: float
     category_code: str
+    estimate_id: str
 
     @model_validator(mode="before")
     @classmethod

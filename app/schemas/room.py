@@ -4,9 +4,9 @@ import uuid
 class Room(BaseModel):
     id: str = "room_" + str(uuid.uuid4())
     name: str
-    length: float | None = None
-    width: float | None = None
-    height: float | None = None
+    length: float
+    width: float
+    height: float
 
     @model_validator(mode="before")
     @classmethod

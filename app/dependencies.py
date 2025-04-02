@@ -1,9 +1,11 @@
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from fastapi import Depends
+import os
+from dotenv import load_dotenv
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+load_dotenv()
+
+# Create the SQLAlchemy engine
+engine = create_engine(os.getenv("DATABASE_URL"))
+
+session = Session(bind=engine)

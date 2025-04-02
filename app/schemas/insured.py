@@ -2,7 +2,7 @@ from pydantic import BaseModel, model_validator
 import uuid
 
 class Insured(BaseModel):
-    insured_id: str = "insured_" + str(uuid.uuid4())
+    id: str = "insured_" + str(uuid.uuid4())
     name: str
     street: str
     city: str

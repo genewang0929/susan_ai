@@ -1,5 +1,5 @@
 # from routes.assignment import router as assignment_router
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 import xml.etree.ElementTree as ET
 from schemas.estimate import Estimate
@@ -7,8 +7,10 @@ from schemas.assignment import Assignment
 from schemas.insured import Insured
 from schemas.item import Item
 from schemas.room import Room
+from schemas.estimate_room import Estimate_Room
+from schemas.converter import Converter
 from pydantic import ValidationError
-
+from services.insert import insert_estimate
 
 app = FastAPI()
 
@@ -30,6 +32,8 @@ async def validation_exception_handler(request: Request, exc: ValidationError):
 async def import_estimates(file: UploadFile = File(...)):
     content = await file.read()
 
+    converter = Converter()
+
     root = ET.fromstring(content)
     insured = Insured(
         name = root.findall("./ASSIGNMENT/INSURED/NAME")[0].text,
@@ -39,19 +43,22 @@ async def import_estimates(file: UploadFile = File(...)):
         zip = root.findall("./ASSIGNMENT/INSURED/ADDRESS/ZIP")[0].text
     )
     print(insured)
+    converter.insured = insured
 
 
     assignment = Assignment(
         claim_number = root.findall("./ASSIGNMENT/CLAIM_NUMBER")[0].text,
         policy_number = root.findall("./ASSIGNMENT/POLICY_NUMBER")[0].text,
         loss_date = root.findall("./ASSIGNMENT/LOSS_DATE")[0].text,
-        insured_id = insured.insured_id
+        insured_id = insured.id
     )
     print(assignment)
+    converter.assignment = assignment
 
 
     estimate = Estimate()
     print(estimate)
+    converter.estimate = estimate
 
 
     line_items = root.findall("./ESTIMATE/LINE_ITEMS/ITEM")
@@ -69,9 +76,11 @@ async def import_estimates(file: UploadFile = File(...)):
             uom = line_item.findall("./UOM")[0].text,
             unit_price = float(unit_price),
             extension = float(extension),
-            category_code = line_item.findall("./CATEGORY_CODE")[0].text
+            category_code = line_item.findall("./CATEGORY_CODE")[0].text,
+            estimate_id = estimate.id
         )
         print(item)
+        converter.items.append(item)
 
 
     rooms = root.findall("./ESTIMATE/ROOMS/ROOM")
@@ -89,3 +98,13 @@ async def import_estimates(file: UploadFile = File(...)):
             height = float(height)
         )
         print(room)
+        converter.rooms.append(room)
+
+        estimate_room = Estimate_Room(
+            estimate_id = estimate.id,
+            room_id = room.id
+        )
+        print(estimate_room)
+        converter.estimate_room.append(estimate_room)
+
+    return insert_estimate(converter)
