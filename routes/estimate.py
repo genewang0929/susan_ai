@@ -1,6 +1,8 @@
-# from routes.assignment import router as assignment_router
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request, Depends
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter
+from sqlalchemy.orm import Session
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from config.dependencies import db
+from services.estimate import insert_estimate, get_estimate_by_id, update_estimate_status
 import xml.etree.ElementTree as ET
 from schemas.estimate import Estimate
 from schemas.assignment import Assignment
@@ -8,27 +10,14 @@ from schemas.insured import Insured
 from schemas.item import Item
 from schemas.room import Room
 from schemas.estimate_room import Estimate_Room
+from schemas.category import Category
 from schemas.converter import Converter
-from pydantic import ValidationError
-from services.insert import insert_estimate
+from schemas.request.estimate import UpdateStatus
 
-app = FastAPI()
-
-# Include API routes
-# app.include_router(assignment_router, prefix="/api/assignment", tags=["Assignment"])
-
-# Root endpoint
-@app.get("/")
-async def root():
-    return {"message": "Welcome to My FastAPI App!"}
+router = APIRouter(prefix="/api/estimate", tags=["Estimate"])
 
 
-@app.exception_handler(ValidationError)
-async def validation_exception_handler(request: Request, exc: ValidationError):
-    errors = [{"message": e["msg"]} for e in exc.errors()]
-    return JSONResponse(status_code=422, content={"errors": errors})
-
-@app.post("/import")
+@router.post("/import")
 async def import_estimates(file: UploadFile = File(...)):
     content = await file.read()
 
@@ -66,8 +55,14 @@ async def import_estimates(file: UploadFile = File(...)):
         quantity = line_item.findall("./QUANTITY")[0].text
         unit_price = line_item.findall("./UNIT_PRICE")[0].text
         extension = line_item.findall("./EXTENSION")[0].text
-        if quantity is None or unit_price is None or extension is None:
-            return JSONResponse(status_code=422, content={"errors": "Quantity, unit price, and extension cannot be None"})
+        category_code_str = line_item.findall("./CATEGORY_CODE")[0].text
+        if quantity is None or unit_price is None or extension is None or category_code_str is None:
+            return JSONResponse(status_code=422, content={"errors": "Quantity, unit price, extension, and category code cannot be None"})
+
+        category_code = category_code_str.split('-')[0]
+        subcategory_code = category_code_str.split('-')[1]
+        category = Category(code=category_code, subcategory=subcategory_code)
+        converter.categories.append(category)
 
         item = Item(
             code = line_item.findall("./CODE")[0].text,
@@ -76,7 +71,8 @@ async def import_estimates(file: UploadFile = File(...)):
             uom = line_item.findall("./UOM")[0].text,
             unit_price = float(unit_price),
             extension = float(extension),
-            category_code = line_item.findall("./CATEGORY_CODE")[0].text,
+            category_code = category_code,
+            subcategory_code = subcategory_code,
             estimate_id = estimate.id
         )
         print(item)
@@ -108,3 +104,11 @@ async def import_estimates(file: UploadFile = File(...)):
         converter.estimate_room.append(estimate_room)
 
     return insert_estimate(converter)
+
+@router.get("/{id}")
+async def get_estimate(id: str):
+    return get_estimate_by_id(id)
+
+@router.put("/{id}/status")
+async def update_status(id: str, status: UpdateStatus):
+    return update_estimate_status(id, status)

@@ -1,14 +1,9 @@
 from pydantic import BaseModel, model_validator
 
-class Item(BaseModel):
+class Category(BaseModel):
     code: str
-    description: str
-    quantity: float
-    uom: str
-    unit_price: float
-    extension: float
-    category_code: str
-    estimate_id: str
+    description: str = "No description"
+    subcategory: str
 
     @model_validator(mode="before")
     @classmethod

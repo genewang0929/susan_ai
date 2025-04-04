@@ -1,5 +1,6 @@
+from enum import unique
 from sqlalchemy.orm import DeclarativeBase,Mapped,mapped_column,relationship
-from sqlalchemy import ForeignKey,Text, Column
+from sqlalchemy import ForeignKey,Text, Column, ForeignKeyConstraint
 from sqlalchemy import Table
 from typing import List
 
@@ -80,6 +81,19 @@ class Room(Base):
         return f"Room(id={self.id}, name={self.name}, length={self.length}, width={self.width}, height={self.height})"
 
 
+# Association table for one-to-many relationship between Category and Item
+class Category(Base):
+    __tablename__ = "category"
+
+    code:Mapped[str] = mapped_column(primary_key=True, unique=True)
+    description:Mapped[str] = mapped_column(nullable=False)
+    subcategory:Mapped[str] = mapped_column(primary_key=True, unique=True)
+    item:Mapped["Item"] = relationship(back_populates="category")
+
+    def __repr__(self):
+        return f"Category(code={self.code}, description={self.description}, subcategory={self.subcategory})"
+
+
 # Association table for one-to-many relationship between Estimate and Item
 class Item(Base):
     __tablename__ = "item"
@@ -91,8 +105,11 @@ class Item(Base):
     unit_price:Mapped[float] = mapped_column(nullable=False)
     extension:Mapped[float] = mapped_column(nullable=False)
     category_code:Mapped[str] = mapped_column(nullable=False)
+    subcategory_code:Mapped[str] = mapped_column(nullable=False)
     estimate_id:Mapped[str] = mapped_column(ForeignKey("estimate.id"), nullable=False)
     estimate:Mapped["Estimate"] = relationship(back_populates="item")
+    category:Mapped["Category"] = relationship(back_populates="item")
+    __table_args__ = (ForeignKeyConstraint([category_code, subcategory_code], [Category.code, Category.subcategory]), {})
 
     def __repr__(self):
         return f"Item(code={self.code}, description={self.description}, quantity={self.quantity}, uom={self.uom}, unit_price={self.unit_price}, extension={self.extension}, category_code={self.category_code})"

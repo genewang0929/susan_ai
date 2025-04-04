@@ -8,4 +8,4 @@ load_dotenv()
 # Create the SQLAlchemy engine
 engine = create_engine(os.getenv("DATABASE_URL"))
 
-session = Session(bind=engine)
+db = Session(bind=engine)

@@ -1,7 +1,9 @@
 from typing_extensions import LiteralString
+from schemas.response.estimate import ImportResponse
+from schemas.request.estimate import UpdateStatus
 from schemas.converter import Converter
-from dependencies import session
-from models import Assignment, Estimate_Room, Insured, Estimate, Item, Room
+from config.dependencies import db
+from models import Assignment, Estimate_Room, Insured, Estimate, Category, Item, Room
 
 def insert_estimate(converter: Converter):
     mapped_insured = Insured(
@@ -12,7 +14,7 @@ def insert_estimate(converter: Converter):
         state = converter.insured.state,
         zip = converter.insured.zip
     )
-    session.add(mapped_insured)
+    db.add(mapped_insured)
 
     mapped_assignment = Assignment(
         claim_number = converter.assignment.claim_number,
@@ -20,14 +22,24 @@ def insert_estimate(converter: Converter):
         loss_date = converter.assignment.loss_date,
         insured_id = converter.assignment.insured_id
     )
-    session.add(mapped_assignment)
+    db.add(mapped_assignment)
 
     mapped_estimate = Estimate(
         id = converter.estimate.id,
         status = converter.estimate.status,
         timestamp = converter.estimate.timestamp
     )
-    session.add(mapped_estimate)
+    db.add(mapped_estimate)
+
+    for category in converter.categories:
+        mapped_category = Category(
+            code = category.code,
+            description = category.description,
+            subcategory = category.subcategory
+        )
+        # TODO: Insert of not exist
+        # category_exist = select(Category).
+        db.add(mapped_category)
 
     for item in converter.items:
         mapped_item = Item(
@@ -38,9 +50,10 @@ def insert_estimate(converter: Converter):
             unit_price = item.unit_price,
             extension = item.extension,
             category_code = item.category_code,
+            subcategory_code = item.subcategory_code,
             estimate_id = item.estimate_id
         )
-        session.add(mapped_item)
+        db.add(mapped_item)
 
     for room in converter.rooms:
         mapped_room = Room(
@@ -50,15 +63,35 @@ def insert_estimate(converter: Converter):
             width = room.width,
             height = room.height
         )
-        session.add(mapped_room)
+        db.add(mapped_room)
 
     for estimate_room in converter.estimate_room:
         mapped_est_room = Estimate_Room(
             estimate_id = estimate_room.estimate_id,
             room_id = estimate_room.room_id
         )
-        session.add(mapped_est_room)
+        db.add(mapped_est_room)
 
-    session.commit()
+    # session.commit()
 
-    return "data has been inserted"
+    return ImportResponse(
+        success = True,
+        estimate_id = converter.estimate.id,
+        status = "received",
+        timestamp = converter.estimate.timestamp,
+        validation_results = None
+    )
+
+def get_estimate_by_id(id):
+    estimate = db.query(Estimate).filter(Estimate.id == id).first()
+    return estimate
+
+def update_estimate_status(id: str, status: UpdateStatus):
+    estimate = get_estimate_by_id(id)
+    if not estimate:
+        return None
+    estimate.status = status.status
+
+    db.commit()
+    db.refresh(estimate)
+    return estimate

@@ -4,6 +4,8 @@ from schemas.item import Item
 from schemas.estimate import Estimate
 from schemas.insured import Insured
 from schemas.assignment import Assignment
+from schemas.category import Category
+
 from typing import List
 
 class Converter():
@@ -11,11 +13,13 @@ class Converter():
     insured: Insured
     estimate_room: List[Estimate_Room]
     estimate: Estimate
-    rooms: List[Room]
+    categories: List[Category]
     items: List[Item]
+    rooms: List[Room]
 
 
     def __init__(self):
         self.estimate_room = []
         self.rooms = []
         self.items = []
+        self.categories = []
