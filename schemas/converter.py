@@ -1,5 +1,5 @@
 from schemas.estimate_room import Estimate_Room
-from models import Room
+from schemas.room import Room
 from schemas.item import Item
 from schemas.estimate import Estimate
 from schemas.insured import Insured

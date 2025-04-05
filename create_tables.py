@@ -1,4 +1,4 @@
-from models import Base, Item, Room, Estimate
+from models.models import Base, Item, Room, Estimate
 from config.dependencies import engine
 
 

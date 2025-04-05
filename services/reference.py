@@ -1,5 +1,5 @@
 from config.dependencies import db
-from models import Category, Item
+from models.models import Category, Item
 
 def get_all_categories():
     categories = db.query(Category).all()

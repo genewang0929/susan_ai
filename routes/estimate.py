@@ -1,6 +1,8 @@
 from fastapi import APIRouter
+from schemas.response.errors import Error
 from sqlalchemy.orm import Session
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import JSONResponse
 from config.dependencies import db
 from services.estimate import insert_estimate, get_estimate_by_id, update_estimate_status
 import xml.etree.ElementTree as ET
@@ -103,7 +105,10 @@ async def import_estimates(file: UploadFile = File(...)):
         print(estimate_room)
         converter.estimate_room.append(estimate_room)
 
-    return insert_estimate(converter)
+    response = insert_estimate(converter)
+    if isinstance(response, Error):
+        return JSONResponse(status_code=response.status_code, content={"errors": response.message})
+    return response
 
 @router.get("/{id}")
 async def get_estimate(id: str):

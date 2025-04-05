@@ -1,9 +1,13 @@
+from re import I
 from typing_extensions import LiteralString
+from schemas.response.errors import Error
 from schemas.response.estimate import ImportResponse
 from schemas.request.estimate import UpdateStatus
 from schemas.converter import Converter
 from config.dependencies import db
-from models import Assignment, Estimate_Room, Insured, Estimate, Category, Item, Room
+from models.models import Assignment, Estimate_Room, Insured, Estimate, Category, Item, Room
+from sqlalchemy.exc import IntegrityError
+
 
 def insert_estimate(converter: Converter):
     mapped_insured = Insured(
@@ -15,14 +19,19 @@ def insert_estimate(converter: Converter):
         zip = converter.insured.zip
     )
     db.add(mapped_insured)
+    # db.commit()
 
-    mapped_assignment = Assignment(
-        claim_number = converter.assignment.claim_number,
-        policy_number = converter.assignment.policy_number,
-        loss_date = converter.assignment.loss_date,
-        insured_id = converter.assignment.insured_id
-    )
-    db.add(mapped_assignment)
+    try:
+        mapped_assignment = Assignment(
+            claim_number = converter.assignment.claim_number,
+            policy_number = converter.assignment.policy_number,
+            loss_date = converter.assignment.loss_date,
+            insured_id = converter.assignment.insured_id
+        )
+        db.add(mapped_assignment)
+        db.commit()
+    except IntegrityError:
+        return Error(status_code=422, message="Assignment already exists")
 
     mapped_estimate = Estimate(
         id = converter.estimate.id,
@@ -30,30 +39,37 @@ def insert_estimate(converter: Converter):
         timestamp = converter.estimate.timestamp
     )
     db.add(mapped_estimate)
+    # db.commit()
 
-    for category in converter.categories:
-        mapped_category = Category(
-            code = category.code,
-            description = category.description,
-            subcategory = category.subcategory
-        )
-        # TODO: Insert of not exist
-        # category_exist = select(Category).
-        db.add(mapped_category)
+    try:
+        for category in converter.categories:
+            mapped_category = Category(
+                code = category.code,
+                description = category.description,
+                subcategory = category.subcategory
+            )
+            db.add(mapped_category)
+            db.commit()
+    except IntegrityError:
+        return Error(status_code=422, message="Category already exists")
 
-    for item in converter.items:
-        mapped_item = Item(
-            code = item.code,
-            description = item.description,
-            quantity = item.quantity,
-            uom = item.uom,
-            unit_price = item.unit_price,
-            extension = item.extension,
-            category_code = item.category_code,
-            subcategory_code = item.subcategory_code,
-            estimate_id = item.estimate_id
-        )
-        db.add(mapped_item)
+    try:
+        for item in converter.items:
+            mapped_item = Item(
+                code = item.code,
+                description = item.description,
+                quantity = item.quantity,
+                uom = item.uom,
+                unit_price = item.unit_price,
+                extension = item.extension,
+                category_code = item.category_code,
+                subcategory_code = item.subcategory_code,
+                estimate_id = item.estimate_id
+            )
+            db.add(mapped_item)
+            db.commit()
+    except IntegrityError:
+        return Error(status_code=422, message="Item already exists")
 
     for room in converter.rooms:
         mapped_room = Room(
@@ -64,6 +80,7 @@ def insert_estimate(converter: Converter):
             height = room.height
         )
         db.add(mapped_room)
+        db.commit()
 
     for estimate_room in converter.estimate_room:
         mapped_est_room = Estimate_Room(
@@ -71,8 +88,10 @@ def insert_estimate(converter: Converter):
             room_id = estimate_room.room_id
         )
         db.add(mapped_est_room)
+        db.commit()
 
-    # session.commit()
+    # Successfully imported, change estimate status to "Submitted"
+    update_estimate_status(converter.estimate.id, UpdateStatus(status="Submitted"))
 
     return ImportResponse(
         success = True,
